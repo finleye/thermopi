@@ -29,9 +29,7 @@ while true
     ac_device.off!
   end
 
-  CSV.open("./tmp_log.csv", "ab") do |csv|
-    csv << [Time.now.to_s, human_temp]
-  end
+  CSV.open("./tmp_log.csv", "ab") { |csv| csv << [Time.now.to_s, human_temp] }
 
   sleep 10
 end
