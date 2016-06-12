@@ -5,9 +5,12 @@ class LivingRoom < Zone
 
   def within_schedule?
     time = Time.now.getlocal('-04:00')
-    if (1..5).include? time.wday #Monday - Friday
+
+    # Monday through Friday, morning and evening
+    if (1..5).include? time.wday
       true if (6..9).include?(time.hour) || (18..22).include?(time.hour)
     else
+      # Saturday and Sunday during the day
       true if (6..23).include?(time.hour)
     end
   end

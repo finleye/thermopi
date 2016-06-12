@@ -4,15 +4,17 @@ class Bedroom < Zone
   end
 
   def within_schedule?
+    # Always on
     true
   end
 
   def target_temp_for_time
     time = Time.now.getlocal('-04:00')
-    if (0..9).include?(time.hour) || (18..23).include?(time.hour)
-      76
-    else
+    # Warmer Monday through Friday between 8AM and 5PM
+    if (1..5).include? time.wday && (8..17).include?(time.hour)
       77
+    else
+      76
     end
   end
 end
