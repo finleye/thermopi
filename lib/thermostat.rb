@@ -34,17 +34,20 @@ class Thermostat
         zone_device = zone.switch
         puts "#{zone.name} Current: #{human_temp}º"
 
-        if zone.paused?
-          puts "#{zone.name} paused"
-          zones_info[zone.name] = { current: human_temp, msg: "PAS" }
+        unless zone.eligible_to_run?
+          reason = ineligible_reason
+
+          if reason == :paused
+            puts "#{zone.name} paused"
+            zones_info[zone.name] = { current: human_temp, msg: "PAS" }
+          elsif reason == :off_schedule
+            puts "#{zone.name} not scheduled for #{Time.now.getlocal('-04:00').strftime("%R %p on %A")}"
+            zones_info[zone.name] = { current: human_temp, msg: "OFF" }
+          end
+
           next
         end
 
-        unless zone.within_schedule?
-          puts "#{zone.name} not scheduled for #{Time.now.getlocal('-04:00').strftime("%R %p on %A")}"
-          zones_info[zone.name] = { current: human_temp, msg: "OFF" }
-          next
-        end
 
         puts "#{zone.name} Target: #{zone.target_temp.round(0)}º"
 
@@ -56,24 +59,31 @@ class Thermostat
           zone_device.off!
         end
 
-        zones_info[zone.name] = { target: zone.target_temp.round(0), current: human_temp }
+        zones_info[zone.name] = {
+          target: zone.target_temp.round(0),
+          current: human_temp
+        }
 
-        query = { zone: zone.name, time: Time.now.getlocal('-04:00'), temperature: zone_temp }
+        query = {
+          zone: zone.name,
+          time: Time.now.getlocal('-04:00'),
+          temperature: zone_temp
+        }
         data_bin.post_data(query)
 
         puts "*********************************"
       end
 
-      begin
+      #begin
         screen.clear
         screen.message(screen_text)
 
         listen_to_buttons
 
-      rescue => e
-        puts "***** Problem printing to screen at #{Time.now.getlocal('-04:00').strftime("%R %p")}: #{e.class}"
-        sleep 2
-      end
+      #rescue => e
+        #puts "***** Problem printing to screen at #{Time.now.getlocal('-04:00').strftime("%R %p")}: #{e.class}"
+        #sleep 2
+      #end
       GC.start
     end
   end
@@ -106,12 +116,12 @@ class Thermostat
         sleep 1
         break
       when (buttons >> Adafruit::LCD::Char16x2::LEFT) & 1 > 0
-        toggle_zone_pause(zones[0])
+        toggle_zone_state(zone[0])
 
         sleep 1
         break
       when (buttons >> Adafruit::LCD::Char16x2::RIGHT) & 1 > 0
-        toggle_zone_pause(zones[1])
+        toggle_zone_state(zone[1])
 
         sleep 1
         break
@@ -140,15 +150,35 @@ class Thermostat
     end
   end
 
+  def toggle_zone_sate(zone)
+    if zone.within_schedule?
+      toggle_zone_pause(zone)
+    else
+      toggle_zone_schedule_override(zone)
+    end
+  end
+
+  def toggle_zone_schedule_override(zone)
+    if zone.override_schedule?
+      zone.return_to_schedule!
+      screen.clear
+      screen.message("#{zone.name}\nstarting")
+    else
+      zone.run_off_schedule!
+      screen.clear
+      screen.message("#{zone.name}\nto schedule")
+    end
+  end
+
   def toggle_zone_pause(zone)
     if zone.pause
       zone.unpause!
       screen.clear
-      screen.message("#{zone.name}\nUnpaused")
+      screen.message("#{zone.name}\nunpaused")
     else
       zone.pause!
       screen.clear
-      screen.message("#{zone.name}\nPaused")
+      screen.message("#{zone.name}\npaused")
     end
   end
 end

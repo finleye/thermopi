@@ -4,7 +4,7 @@ require_relative "../lib/zone.rb"
 RSpec.describe Zone, type: :model do
   let(:time_now) { Time.new(2016, 9, 26, 12, 0) }
   let(:switch) { double(:switch) }
-  let(:zone) { Zone.new("sensor_id", switch) }
+  let(:zone) { described_class.new("sensor_id", switch) }
 
   before do
     allow(Time).to receive(:now).and_return(time_now)
@@ -48,6 +48,36 @@ RSpec.describe Zone, type: :model do
 
     it "should return false if the pause value hasn't been altered" do
       expect(zone.paused?).to be_falsey
+    end
+  end
+
+  context "overriding schedule" do
+    class TestZone < Zone
+      def within_schedule?
+        time = Time.now.getlocal('-04:00')
+
+        true if time.wday == 0
+      end
+    end
+
+    let(:zone) { TestZone.new("sensor_id", switch) }
+    let(:within_schedule?) { double(:within_schedule) }
+
+    it "should recognize the zone if off schedule" do
+      expect(zone.within_schedule?).to be_falsey
+    end
+
+    it "should allow the zone to run even if off schedule" do
+      zone.run_off_schedule!
+
+      expect(zone.eligible_to_run?).to be_truthy
+    end
+
+    it "should reset override if the time expires" do
+      zone.override_schedule = true
+      zone.override_schedule_expire = time_now - 10*60
+
+      expect(zone.eligible_to_run?).to be_falsey
     end
   end
 end
