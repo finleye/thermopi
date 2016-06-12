@@ -1,17 +1,16 @@
 require "./lib/thermostat.rb"
 
+living_room_sensor = "28-000002e37be8"
+bedroom_sensor = "28-03164016a6ff"
+
 puts "Setting up bedroom switch"
 bedroom_switch_mac_partial = "4b:e3"
 bedroom_switch_ip = IpFinder.find(bedroom_switch_mac_partial).first
 bedroom_switch = TpLink.new(bedroom_switch_ip)
 
-puts "Setting up living switch"
+puts "Setting up living room switch"
 living_room_mac_partial = "90:ad"
-all_switches = Wemote::Switch.all(living_room_mac_partial)
-living_room_switch = all_switches.first
-
-living_room_sensor = "28-000002e37be8"
-bedroom_sensor = "28-03164016a6ff"
+living_room_switch = Wemote::Switch.all(living_room_mac_partial).first
 
 puts "Creating zones"
 living_room_zone = LivingRoom.new(living_room_sensor, living_room_switch)

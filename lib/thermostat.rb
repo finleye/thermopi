@@ -49,10 +49,10 @@ class Thermostat
 
         puts "#{zone.name} Target: #{zone.target_temp.round(0)}º"
 
-        if zone_temp > (zone.target_temp + threshold) && zone_device.off?
+        if zone_temp > (zone.target_temp + THRESHOLD) && zone_device.off?
           puts "Turning #{zone.name} A/C on"
           zone_device.on!
-        elsif zone_temp < (zone.target_temp - threshold) && zone_device.on?
+        elsif zone_temp < (zone.target_temp - THRESHOLD) && zone_device.on?
           puts "Turning #{zone.name} A/C off"
           zone_device.off!
         end
