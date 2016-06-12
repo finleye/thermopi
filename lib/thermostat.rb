@@ -35,7 +35,7 @@ class Thermostat
         puts "#{zone.name} Current: #{human_temp}º"
 
         unless zone.eligible_to_run?
-          reason = ineligible_reason
+          reason = zone.ineligible_reason
 
           if reason == :paused
             puts "#{zone.name} paused"
@@ -113,17 +113,18 @@ class Thermostat
         zones.each { |zone| zone.reset_override! }
         screen.clear
         screen.message("#{3.chr} #{Time.now.getlocal('-04:00').strftime("%b%e %I:%M %p")}\nOverride Reset")
+
         sleep 1
         break
       when (buttons >> Adafruit::LCD::Char16x2::LEFT) & 1 > 0
-        toggle_zone_state(zone[0])
-
+        toggle_zone_state(zones[0])
         sleep 1
+
         break
       when (buttons >> Adafruit::LCD::Char16x2::RIGHT) & 1 > 0
-        toggle_zone_state(zone[1])
-
+        toggle_zone_state(zones[1])
         sleep 1
+
         break
       when (buttons >> Adafruit::LCD::Char16x2::UP) & 1 > 0
         override_msg = zones.map do |zone|
@@ -150,7 +151,7 @@ class Thermostat
     end
   end
 
-  def toggle_zone_sate(zone)
+  def toggle_zone_state(zone)
     if zone.within_schedule?
       toggle_zone_pause(zone)
     else
@@ -162,11 +163,11 @@ class Thermostat
     if zone.override_schedule?
       zone.return_to_schedule!
       screen.clear
-      screen.message("#{zone.name}\nstarting")
+      screen.message("#{zone.name}\non schedule")
     else
       zone.run_off_schedule!
       screen.clear
-      screen.message("#{zone.name}\nto schedule")
+      screen.message("#{zone.name}\noff schedule")
     end
   end
 
