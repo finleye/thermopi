@@ -1,0 +1,7 @@
+--colour
+--format documentation
+#--format progress
+#--drb
+#--fail-fast
+--profile
+

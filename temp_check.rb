@@ -59,7 +59,7 @@ while true
     end
 
     unless zone.within_schedule?
-      puts "#{zone.name} not scheduled for #{(Time.now - 4*60*60).strftime("%R %p on %A")}"
+      puts "#{zone.name} not scheduled for #{Time.now.getlocal('-04:00').strftime("%R %p on %A")}"
       zones_info[zone.name] = { current: human_temp, msg: "OFF" }
       next
     end
@@ -76,7 +76,7 @@ while true
 
     zones_info[zone.name] = { target: zone.target_temp.round(0), current: human_temp }
 
-    query = { zone: zone.name, time: (Time.now - 4*60*60), temperature: zone_temp }
+    query = { zone: zone.name, time: Time.now.getlocal('-04:00'), temperature: zone_temp }
     data_bin.post_data(query)
 
     CSV.open("./tmp_log.csv", "ab") { |csv| csv << [Time.now.to_s, human_temp, zone.name] }
@@ -101,7 +101,7 @@ while true
       when (buttons >> Adafruit::LCD::Char16x2::SELECT) & 1 > 0
         zones.each { |zone| zone.reset_override! }
         screen.clear
-        screen.message("#{3.chr} #{(Time.now - 4*60*60).strftime("%b%e %I:%M %p")}\nOverride Reset")
+        screen.message("#{3.chr} #{Time.now.getlocal('-04:00').strftime("%b%e %I:%M %p")}\nOverride Reset")
         sleep 1
         break
       when (buttons >> Adafruit::LCD::Char16x2::LEFT) & 1 > 0

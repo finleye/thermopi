@@ -12,7 +12,7 @@ class Zone
 
   def pause!
     switch.off!
-    @pause_expire = (Time.now-4*60*60) + PAUSE_EXPIRE
+    @pause_expire = Time.now.getlocal('-04:00') + PAUSE_EXPIRE
     @pause = true
   end
 
@@ -23,7 +23,7 @@ class Zone
   end
 
   def paused?
-    if pause && !pause_expire.nil? && (Time.now-4*60*60) > pause_expire
+    if pause && !pause_expire.nil? && Time.now.getlocal('-04:00') > pause_expire
       @pause_expire = nil
       @pause = false
     else
@@ -33,7 +33,7 @@ class Zone
 
   def target_temp
     if override_temp && !override_expire.nil?
-      if (Time.now-4*60*60) > override_expire
+      if Time.now.getlocal('-04:00') > override_expire
         reset_override!
         target_temp_for_time
       else
@@ -68,7 +68,7 @@ class Zone
   end
 
   def update_override_expire
-    @override_expire = (Time.now - 4*60*60) + OVERRIDE_EXPIRE
+    @override_expire = Time.now.getlocal('-04:00') + OVERRIDE_EXPIRE
   end
 
   def temp
