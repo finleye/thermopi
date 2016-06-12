@@ -10,7 +10,7 @@ class Bedroom < Zone
   def target_temp_for_time
     time = Time.now.getlocal('-04:00')
     if (0..9).include?(time.hour) || (18..23).include?(time.hour)
-      75
+      76
     else
       77
     end

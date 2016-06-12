@@ -17,18 +17,17 @@ require "./lib/tp_link.rb"
 class Thermostat
   THRESHOLD = 1
 
-  attr_accessor :zones, :screen, :data_bin
+  attr_accessor :zones, :screen, :data_bin, :zones_info
 
   def initialize(zones, screen, data_bin)
     @zones = zones
     @screen = screen
     @data_bin = data_bin
+    @zones_info = {}
   end
 
   def run
     while true
-      zones_info = {}
-
       zones.each do |zone|
         zone_temp = zone.temp
         human_temp = zone_temp.round(2)
@@ -62,32 +61,39 @@ class Thermostat
         query = { zone: zone.name, time: Time.now.getlocal('-04:00'), temperature: zone_temp }
         data_bin.post_data(query)
 
-        CSV.open("./tmp_log.csv", "ab") { |csv| csv << [Time.now.to_s, human_temp, zone.name] }
         puts "*********************************"
       end
 
-      message = zones_info.map do |zone_name, zone_info|
-        if zone_info[:msg]
-          "#{zone_name.gsub(/[^A-Z]/, '')}: #{zone_info[:current]}#{223.chr} #{4.chr} #{zone_info[:msg]}"
-        else
-          "#{zone_name.gsub(/[^A-Z]/, '')}: #{zone_info[:current]}#{223.chr} #{5.chr} #{zone_info[:target]}#{223.chr}"
-        end
-      end.join("\n")
+      begin
+        screen.clear
+        screen.message(screen_text)
 
-      #begin
-      screen.clear
-      screen.message(message)
+        listen_to_buttons
 
-      listen_to_buttons
-
-      #rescue => e
-      #puts "***** Problem printing to screen at #{(Time.now - 4*60*60).strftime("%R %p")}: #{e.class}"
-      #sleep 2
-      #end
+      rescue => e
+        puts "***** Problem printing to screen at #{Time.now.getlocal('-04:00').strftime("%R %p")}: #{e.class}"
+        sleep 2
+      end
+      GC.start
     end
   end
 
   private
+
+  def screen_text
+    message = zones_info.map do |zone_name, zone_info|
+      zone_msg(zone_name, zone_info)
+    end.join("\n")
+  end
+
+  def zone_msg(zone_name, zone_info)
+    mag_prefix = "#{zone_name.gsub(/[^A-Z]/, '')}: #{zone_info[:current]}#{223.chr}"
+    if zone_info[:msg]
+      "#{mag_prefix} #{4.chr} #{zone_info[:msg]}"
+    else
+      "#{mag_prefix} #{5.chr} #{zone_info[:target]}#{223.chr}"
+    end
+  end
 
   def listen_to_buttons
     100.times do
@@ -100,12 +106,12 @@ class Thermostat
         sleep 1
         break
       when (buttons >> Adafruit::LCD::Char16x2::LEFT) & 1 > 0
-        toggle_zone_pause(living_room_zone)
+        toggle_zone_pause(zones[0])
 
         sleep 1
         break
       when (buttons >> Adafruit::LCD::Char16x2::RIGHT) & 1 > 0
-        toggle_zone_pause(bedroom_zone)
+        toggle_zone_pause(zones[1])
 
         sleep 1
         break
