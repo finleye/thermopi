@@ -7,6 +7,9 @@ class TpLink
     @ip_address = ip
   end
 
+  def on?; true; end
+  def off?; true; end
+
   def on!
     data = ["0000002ad0f281f88bff9af7d5ef94b6c5a0d48bf99cf091e8b7c4b0d1a5c0e2d8a381f286e793f6d4eedfa2dfa2"].pack("H*")
     TCPSocket.new(ip_address, PORT).write(data)
