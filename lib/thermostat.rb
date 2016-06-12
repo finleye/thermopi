@@ -78,73 +78,71 @@ class Thermostat
       screen.clear
       screen.message(message)
 
-      100.times do
-        buttons = screen.buttons
-        case
-        when (buttons >> Adafruit::LCD::Char16x2::SELECT) & 1 > 0
-          zones.each { |zone| zone.reset_override! }
-          screen.clear
-          screen.message("#{3.chr} #{Time.now.getlocal('-04:00').strftime("%b%e %I:%M %p")}\nOverride Reset")
-          sleep 1
-          break
-        when (buttons >> Adafruit::LCD::Char16x2::LEFT) & 1 > 0
-          zone = living_room_zone
-          if zone.pause
-            zone.unpause!
-            screen.clear
-            screen.message("#{zone.name}\nUnpaused")
-          else
-            zone.pause!
-            screen.clear
-            screen.message("#{zone.name}\nPaused")
-          end
-          sleep 1
-          break
-        when (buttons >> Adafruit::LCD::Char16x2::RIGHT) & 1 > 0
-          zone = bedroom_zone
-          if zone.pause
-            zone.unpause!
-            screen.clear
-            screen.message("#{zone.name}\nUnpaused")
-          else
-            zone.pause!
-            screen.clear
-            screen.message("#{zone.name}\nPaused")
-          end
+      listen_to_buttons
 
-          sleep 1
-          break
-        when (buttons >> Adafruit::LCD::Char16x2::UP) & 1 > 0
-          override_msg = zones.map do |zone|
-            zone.increase_override!
-            "#{zone.name.gsub(/[^A-Z]/, '')}: #{zone.target_temp}#{223.chr} UP"
-          end.join("\n")
-
-          screen.clear
-          screen.message(override_msg)
-          sleep 1
-          break
-        when (buttons >> Adafruit::LCD::Char16x2::DOWN) & 1 > 0
-          override_msg = zones.map do |zone|
-            zone.decrease_override!
-            "#{zone.name.gsub(/[^A-Z]/, '')}: #{zone.target_temp}#{223.chr} DOWN"
-          end.join("\n")
-
-          screen.clear
-          screen.message(override_msg)
-          sleep 1
-          break
-        end
-        sleep 0.1
-      end
       #rescue => e
       #puts "***** Problem printing to screen at #{(Time.now - 4*60*60).strftime("%R %p")}: #{e.class}"
       #sleep 2
       #end
-
-
-      #sleep 10
     end
   end
 
+  private
+
+  def listen_to_buttons
+    100.times do
+      buttons = screen.buttons
+      case
+      when (buttons >> Adafruit::LCD::Char16x2::SELECT) & 1 > 0
+        zones.each { |zone| zone.reset_override! }
+        screen.clear
+        screen.message("#{3.chr} #{Time.now.getlocal('-04:00').strftime("%b%e %I:%M %p")}\nOverride Reset")
+        sleep 1
+        break
+      when (buttons >> Adafruit::LCD::Char16x2::LEFT) & 1 > 0
+        toggle_zone_pause(living_room_zone)
+
+        sleep 1
+        break
+      when (buttons >> Adafruit::LCD::Char16x2::RIGHT) & 1 > 0
+        toggle_zone_pause(bedroom_zone)
+
+        sleep 1
+        break
+      when (buttons >> Adafruit::LCD::Char16x2::UP) & 1 > 0
+        override_msg = zones.map do |zone|
+          zone.increase_override!
+          "#{zone.name.gsub(/[^A-Z]/, '')}: #{zone.target_temp}#{223.chr} UP"
+        end.join("\n")
+
+        screen.clear
+        screen.message(override_msg)
+        sleep 1
+        break
+      when (buttons >> Adafruit::LCD::Char16x2::DOWN) & 1 > 0
+        override_msg = zones.map do |zone|
+          zone.decrease_override!
+          "#{zone.name.gsub(/[^A-Z]/, '')}: #{zone.target_temp}#{223.chr} DOWN"
+        end.join("\n")
+
+        screen.clear
+        screen.message(override_msg)
+        sleep 1
+        break
+      end
+      sleep 0.1
+    end
+  end
+
+  def toggle_zone_pause(zone)
+    if zone.pause
+      zone.unpause!
+      screen.clear
+      screen.message("#{zone.name}\nUnpaused")
+    else
+      zone.pause!
+      screen.clear
+      screen.message("#{zone.name}\nPaused")
+    end
+  end
 end
