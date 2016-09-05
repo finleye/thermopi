@@ -12,7 +12,7 @@ class Bedroom < Zone
     time = Time.now.getlocal('-04:00')
     # Warmer Monday through Friday between 8AM and 5PM
     if (1..5).include? time.wday && (8..17).include?(time.hour)
-      77
+      79
     else
       76
     end

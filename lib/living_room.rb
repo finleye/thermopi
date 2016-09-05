@@ -3,6 +3,10 @@ class LivingRoom < Zone
     "Living Room"
   end
 
+  #def within_schedule?
+    #true
+  #end
+
   def within_schedule?
     time = Time.now.getlocal('-04:00')
 

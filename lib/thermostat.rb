@@ -13,16 +13,15 @@ require "./lib/bedroom.rb"
 require "./lib/living_room.rb"
 require "./lib/ip_finder.rb"
 require "./lib/tp_link.rb"
+require "./lib/printer.rb"
 
 class Thermostat
   THRESHOLD = 1
 
-  attr_accessor :zones, :screen, :data_bin, :zones_info
+  attr_accessor :zones, :screen, :zones_info
 
-  def initialize(zones, screen, data_bin)
+  def initialize(zones)
     @zones = zones
-    @screen = screen
-    @data_bin = data_bin
     @zones_info = {}
   end
 
@@ -32,76 +31,62 @@ class Thermostat
         zone_temp = zone.temp
         human_temp = zone_temp.round(2)
         zone_device = zone.switch
-        puts "#{zone.name} Current: #{human_temp}º"
+        #puts "#{zone.name} Current: #{human_temp}º"
 
         unless zone.eligible_to_run?
           reason = zone.ineligible_reason
 
           if reason == :paused
-            puts "#{zone.name} paused"
-            zones_info[zone.name] = { current: human_temp, msg: "PAS" }
+            msg = "Pause"
           elsif reason == :off_schedule
-            puts "#{zone.name} not scheduled for #{Time.now.getlocal('-04:00').strftime("%R %p on %A")}"
-            zones_info[zone.name] = { current: human_temp, msg: "OFF" }
+            msg = "Off"
           end
-
-          next
+        else
+          if zone_temp > (zone.target_temp + THRESHOLD) && zone_device.off?
+            msg = "AC on!"
+            zone_device.on!
+          elsif zone_temp < (zone.target_temp - THRESHOLD) && zone_device.on?
+            msg = "AC off!"
+            zone_device.off!
+          end
         end
-
-
-        puts "#{zone.name} Target: #{zone.target_temp.round(0)}º"
-
-        if zone_temp > (zone.target_temp + THRESHOLD) && zone_device.off?
-          puts "Turning #{zone.name} A/C on"
-          zone_device.on!
-        elsif zone_temp < (zone.target_temp - THRESHOLD) && zone_device.on?
-          puts "Turning #{zone.name} A/C off"
-          zone_device.off!
-        end
-
         zones_info[zone.name] = {
           target: zone.target_temp.round(0),
-          current: human_temp
+          current: human_temp,
+          msg: msg
         }
 
-        query = {
-          zone: zone.name,
-          time: Time.now.getlocal('-04:00'),
-          temperature: zone_temp
-        }
-        data_bin.post_data(query)
+        stamp = Time.now.getlocal('-04:00').strftime("%r")
 
-        puts "*********************************"
+        puts "#{stamp}: #{zone.name}: #{human_temp}º #{msg}"
       end
 
-      #begin
-        screen.clear
-        screen.message(screen_text)
 
-        listen_to_buttons
+      #15.times { puts "" }
+      #screen_text
 
-      #rescue => e
-        #puts "***** Problem printing to screen at #{Time.now.getlocal('-04:00').strftime("%R %p")}: #{e.class}"
-        #sleep 2
-      #end
       GC.start
+      sleep 10
     end
   end
 
   private
 
   def screen_text
-    message = zones_info.map do |zone_name, zone_info|
-      zone_msg(zone_name, zone_info)
-    end.join("\n")
+    puts Time.now.to_s
+    format = "%-6s|%8s|%8s|%-7s\n"
+    printf(format, "Room", "Current", "Target", "Msg")
+    zones_info.each do |zone_name, zone_info|
+      printf(format, zone_name.gsub(" Room", ""), "#{zone_info[:current]}º", "#{zone_info[:target]}º", zone_info[:msg])
+    end
   end
 
   def zone_msg(zone_name, zone_info)
-    mag_prefix = "#{zone_name.gsub(/[^A-Z]/, '')}: #{zone_info[:current]}#{223.chr}"
+    mag_prefix = "#{zone_name} Current: #{zone_info[:current]}º"
     if zone_info[:msg]
-      "#{mag_prefix} #{4.chr} #{zone_info[:msg]}"
+      "#{mag_prefix}\n#{zone_name}: #{zone_info[:msg]}"
     else
-      "#{mag_prefix} #{5.chr} #{zone_info[:target]}#{223.chr}"
+      "#{mag_prefix}\n#{zone_name} Target: #{zone_info[:target]}º"
     end
   end
 
